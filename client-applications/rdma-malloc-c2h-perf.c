@@ -35,61 +35,62 @@
 
 int main(int argc, char **argv)
 {
-	int fd, ret;
-	struct picoevb_rdma_card_info card_info;
-	uint64_t transfer_size;
-	void *dst;
-	struct picoevb_rdma_c2h_dma dma_params;
-	uint64_t tdelta_us;
+  int fd, ret;
+  struct picoevb_rdma_card_info card_info;
+  uint64_t transfer_size;
+  void *dst;
+  struct picoevb_rdma_c2h_dma dma_params;
+  uint64_t tdelta_us;
 
-	if (argc != 1) {
-		fprintf(stderr, "usage: rdma-malloc\n");
-		return 1;
-	}
+  if (argc != 1) {
+    fprintf(stderr, "usage: rdma-malloc\n");
+    return 1;
+  }
 
-	fd = open("/dev/picoevb", O_RDWR);
-	if (fd < 0) {
-		perror("open() failed");
-		return 1;
-	}
+  fd = open("/dev/picoevb", O_RDWR);
+  if (fd < 0) {
+    perror("open() failed");
+    return 1;
+  }
 
-	ret = ioctl(fd, PICOEVB_IOC_CARD_INFO, &card_info);
-	if (ret != 0) {
-		fprintf(stderr, "ioctl(CARD_INFO) failed: %d\n", ret);
-		perror("ioctl() failed");
-		return 1;
-	}
-	transfer_size = card_info.fpga_ram_size;
-	if (transfer_size > MAX_TRANSFER_SIZE)
-		transfer_size = MAX_TRANSFER_SIZE;
+  ret = ioctl(fd, PICOEVB_IOC_CARD_INFO, &card_info);
+  if (ret != 0) {
+    fprintf(stderr, "ioctl(CARD_INFO) failed: %d\n", ret);
+    perror("ioctl() failed");
+    return 1;
+  }
+  transfer_size = card_info.fpga_ram_size;
+  if (transfer_size > MAX_TRANSFER_SIZE)
+    transfer_size = MAX_TRANSFER_SIZE;
 
-	dst = calloc(transfer_size, 1);
-	if (!dst) {
-		fprintf(stderr, "malloc(dst) failed\n");
-		return 1;
-	}
+  dst = calloc(transfer_size, 1);
+  if (!dst) {
+    fprintf(stderr, "malloc(dst) failed\n");
+    return 1;
+  }
 
-	dma_params.src = 0;
-	dma_params.dst = (__u64)dst;
-	dma_params.len = transfer_size;
-	dma_params.flags = 0;
-	ret = ioctl(fd, PICOEVB_IOC_C2H_DMA, &dma_params);
-	if (ret != 0) {
-		fprintf(stderr, "ioctl(DMA) failed: %d\n", ret);
-		perror("ioctl() failed");
-		return 1;
-	}
+  dma_params.src = 0;
+  dma_params.dst = (__u64)dst;
+  dma_params.len = transfer_size;
+  dma_params.flags = 0;
+  ret = ioctl(fd, PICOEVB_IOC_C2H_DMA, &dma_params);
+  if (ret != 0) {
+    fprintf(stderr, "ioctl(DMA) failed: %d\n", ret);
+    perror("ioctl() failed");
+    return 1;
+  }
 
-	tdelta_us = dma_params.dma_time_ns / 1000;
-	printf("Bytes:%lu usecs:%lu MB/s:%lf\n", transfer_size, tdelta_us, (double)transfer_size / (double)tdelta_us);
+  tdelta_us = dma_params.dma_time_ns / 1000;
+  printf("Bytes:%lu usecs:%lu MB/s:%lf\n", transfer_size, tdelta_us, (double)transfer_size / (double)tdelta_us);
 
-	free(dst);
+  free(dst);
 
-	ret = close(fd);
-	if (ret < 0) {
-		perror("close() failed");
-		return 1;
-	}
+  ret = close(fd);
+  if (ret < 0) {
+    perror("close() failed");
+    return 1;
+  }
 
-	return 0;
+  return 0;
 }
+

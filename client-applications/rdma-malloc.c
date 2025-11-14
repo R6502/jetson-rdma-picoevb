@@ -31,88 +31,89 @@
 #include <sys/types.h>
 #include "../kernel-module/picoevb-rdma-ioctl.h"
 
-#define SURFACE_W	1024
-#define SURFACE_H	1024
-#define SURFACE_SIZE	(SURFACE_W * SURFACE_H)
+#define SURFACE_W 1024
+#define SURFACE_H 1024
+#define SURFACE_SIZE  (SURFACE_W * SURFACE_H)
 
-#define OFFSET(x, y)	(((y) * SURFACE_W) + x)
-#define DATA(x, y)	(((y & 0xffff) << 16) | ((x) & 0xffff))
+#define OFFSET(x, y)  (((y) * SURFACE_W) + x)
+#define DATA(x, y)  (((y & 0xffff) << 16) | ((x) & 0xffff))
 
 int main(int argc, char **argv)
 {
-	uint32_t *src, *dst;
-	uint32_t y, x;
-	int fd, ret;
-	struct picoevb_rdma_h2c2h_dma dma_params;
+  uint32_t *src, *dst;
+  uint32_t y, x;
+  int fd, ret;
+  struct picoevb_rdma_h2c2h_dma dma_params;
 
-	if (argc != 1) {
-		fprintf(stderr, "usage: rdma-malloc\n");
-		return 1;
-	}
+  if (argc != 1) {
+    fprintf(stderr, "usage: rdma-malloc\n");
+    return 1;
+  }
 
-	fd = open("/dev/picoevb", O_RDWR);
-	if (fd < 0) {
-		perror("open() failed");
-		return 1;
-	}
+  fd = open("/dev/picoevb", O_RDWR);
+  if (fd < 0) {
+    perror("open() failed");
+    return 1;
+  }
 
-	src = malloc(SURFACE_SIZE * sizeof(*src));
-	if (!src) {
-		fprintf(stderr, "malloc(src) failed\n");
-		return 1;
-	}
+  src = malloc(SURFACE_SIZE * sizeof(*src));
+  if (!src) {
+    fprintf(stderr, "malloc(src) failed\n");
+    return 1;
+  }
 
-	dst = malloc(SURFACE_SIZE * sizeof(*dst));
-	if (!dst) {
-		fprintf(stderr, "malloc(dst) failed\n");
-		return 1;
-	}
+  dst = malloc(SURFACE_SIZE * sizeof(*dst));
+  if (!dst) {
+    fprintf(stderr, "malloc(dst) failed\n");
+    return 1;
+  }
 
-	for (y = 0; y < SURFACE_H; y++) {
-		for (x = 0; x < SURFACE_W; x++) {
-			uint32_t expected = DATA(x, y);
-			uint32_t offset = OFFSET(x, y);
-			src[offset] = expected;
-			dst[offset] = ~expected;
-		}
-	}
+  for (y = 0; y < SURFACE_H; y++) {
+    for (x = 0; x < SURFACE_W; x++) {
+      uint32_t expected = DATA(x, y);
+      uint32_t offset = OFFSET(x, y);
+      src[offset] = expected;
+      dst[offset] = ~expected;
+    }
+  }
 
-	dma_params.src = (__u64)src;
-	dma_params.dst = (__u64)dst;
-	dma_params.len = SURFACE_SIZE * sizeof(*src);
-	dma_params.flags = 0;
-	ret = ioctl(fd, PICOEVB_IOC_H2C2H_DMA, &dma_params);
-	if (ret != 0) {
-		fprintf(stderr, "ioctl() failed: %d\n", ret);
-		perror("ioctl() failed");
-		return 1;
-	}
+  dma_params.src = (__u64)src;
+  dma_params.dst = (__u64)dst;
+  dma_params.len = SURFACE_SIZE * sizeof(*src);
+  dma_params.flags = 0;
+  ret = ioctl(fd, PICOEVB_IOC_H2C2H_DMA, &dma_params);
+  if (ret != 0) {
+    fprintf(stderr, "ioctl() failed: %d\n", ret);
+    perror("ioctl() failed");
+    return 1;
+  }
 
-	ret = 0;
-	for (y = 0; y < SURFACE_H; y++) {
-		for (x = 0; x < SURFACE_W; x++) {
-			uint32_t expected = DATA(x, y);
-			uint32_t offset = OFFSET(x, y);
-			uint32_t actual = dst[offset];
-			if (actual != expected) {
-				fprintf(stderr,
-					"dst[0x%x] is 0x%x not 0x%x\n",
-					offset, actual, expected);
-				ret = 1;
-			}
-		}
-	}
-	if (ret)
-		return 1;
+  ret = 0;
+  for (y = 0; y < SURFACE_H; y++) {
+    for (x = 0; x < SURFACE_W; x++) {
+      uint32_t expected = DATA(x, y);
+      uint32_t offset = OFFSET(x, y);
+      uint32_t actual = dst[offset];
+      if (actual != expected) {
+        fprintf(stderr,
+          "dst[0x%x] is 0x%x not 0x%x\n",
+          offset, actual, expected);
+        ret = 1;
+      }
+    }
+  }
+  if (ret)
+    return 1;
 
-	free(dst);
-	free(src);
+  free(dst);
+  free(src);
 
-	ret = close(fd);
-	if (ret < 0) {
-		perror("close() failed");
-		return 1;
-	}
+  ret = close(fd);
+  if (ret < 0) {
+    perror("close() failed");
+    return 1;
+  }
 
-	return 0;
+  return 0;
 }
+

@@ -31,30 +31,31 @@
 
 int main(int argc, char **argv)
 {
-	int fd, ret;
+        int fd, ret;
 
-	if (argc != 2) {
-		fprintf(stderr, "usage: set-leds value\n");
-		exit(1);
-	}
+        if (argc != 2) {
+                fprintf(stderr, "usage: set-leds value\n");
+                exit(1);
+        }
 
-	fd = open("/dev/picoevb", O_RDWR);
-	if (fd < 0) {
-		perror("open() failed");
-		exit(1);
-	}
+        fd = open("/dev/picoevb", O_RDWR);
+        if (fd < 0) {
+                perror("open() failed");
+                exit(1);
+        }
 
-	ret = ioctl(fd, PICOEVB_IOC_LED, strtoul(argv[1], 0, 10));
-	if (ret != 0) {
-		perror("ioctl() failed");
-		exit(1);
-	}
+        ret = ioctl(fd, PICOEVB_IOC_LED, strtoul(argv[1], 0, 10));
+        if (ret != 0) {
+                perror("ioctl() failed");
+                exit(1);
+        }
 
-	ret = close(fd);
-	if (ret < 0) {
-		perror("close() failed");
-		return 1;
-	}
+        ret = close(fd);
+        if (ret < 0) {
+                perror("close() failed");
+                return 1;
+        }
 
-	return 0;
+        return 0;
 }
+
